@@ -30,3 +30,8 @@ export const searchQuerySchema = z.object({
   sort_order: z.enum(['asc', 'desc']).optional(),
 });
 
+export const statsQuerySchema = z.object({
+  group_by: z.enum(['source', 'day'], {
+    message: 'group_by must be "source" or "day"',
+  }),
+});

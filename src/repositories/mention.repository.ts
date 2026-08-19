@@ -93,4 +93,25 @@ export class MentionRepository {
       .limit(limit)
       .offset(offset);
   }
+
+  static async getStats(groupBy: 'source' | 'day') {
+    if (groupBy === 'source') {
+      const rows = await db('mentions')
+        .select('source as label')
+        .count('* as count')
+        .groupBy('source')
+        .orderBy('count', 'desc');
+
+      return rows as { label: string; count: string }[];
+    }
+
+    const rows = await db('mentions')
+      .select(db.raw("to_char(published_at, 'YYYY-MM-DD') as label"))
+      .count('* as count')
+      .whereNotNull('published_at')
+      .groupBy(db.raw("to_char(published_at, 'YYYY-MM-DD')"))
+      .orderBy('label', 'asc');
+
+    return rows as { label: string; count: string }[];
+  }
 }

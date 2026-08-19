@@ -56,4 +56,12 @@ export class MentionService {
 
     return { data, pagination };
   }
+
+  static async getStats(groupBy: 'source' | 'day') {
+    const rows = await MentionRepository.getStats(groupBy);
+    return rows.map((row) => ({
+      label: row.label,
+      count: Number(row.count),
+    }));
+  }
 }

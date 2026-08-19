@@ -1,5 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import { bulkIngestSchema, searchQuerySchema } from '../validations/mention.validation';
+import {
+  bulkIngestSchema,
+  searchQuerySchema,
+  statsQuerySchema,
+} from '../validations/mention.validation';
 import { MentionService } from '../services/mention.service';
 import { ValidationUtils } from '../utils/validation.utils';
 import { ApiResponse } from '../utils/response.utils';
@@ -47,6 +51,21 @@ export class MentionController {
         result.data,
         result.pagination,
       );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const parsed = statsQuerySchema.safeParse(req.query);
+      if (!parsed.success) {
+        return ValidationUtils.request(res, parsed.error);
+      }
+
+      const result = await MentionService.getStats(parsed.data.group_by);
+
+      return ApiResponse.success(res, 'Stats retrieved successfully', result);
     } catch (error) {
       next(error);
     }
