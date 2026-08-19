@@ -1,0 +1,53 @@
+name: media-content
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: media-content-db
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - media-content
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    container_name: media-content-api
+    ports:
+      - '${PORT:-8000}:${PORT:-8000}'
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    env_file: .env
+    environment:
+      - DB_HOST=postgres
+      - PORT=${PORT:-8000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - media-content
+
+networks:
+  media-content:
+    driver: bridge
+
+volumes:
+  postgres_data:
