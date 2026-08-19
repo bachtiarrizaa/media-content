@@ -13,3 +13,10 @@ export interface Mention {
   created_at: Date;
   updated_at: Date;
 }
+
+export type MentionFilters = {
+  q?: string;
+  source?: string;
+  from?: string;
+  to?: string;
+};

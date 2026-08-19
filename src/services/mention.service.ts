@@ -1,6 +1,8 @@
+import { BulkIngestDto } from '../dtos/mention.dto';
 import { MentionRepository } from '../repositories/mention.repository';
-import { Mention } from '../types/mention';
-import { BulkIngestDto } from '../validations/mention.validation';
+import { Mention, MentionFilters } from '../types/mention';
+import { PaginationQuery } from '../types/pagination';
+import { PaginationUtils } from '../utils/pagination.utils';
 import { NormalizeService } from './normalize.service';
 
 export class MentionService {
@@ -21,5 +23,37 @@ export class MentionService {
       inserted,
       updated,
     };
+  }
+
+  static async search(
+    filters: MentionFilters,
+    paginationQuery: PaginationQuery,
+    sortBy: string = 'published_at',
+    sortOrder: 'asc' | 'desc' = 'desc',
+  ) {
+    const { page, limit, offset } = PaginationUtils.paginate(paginationQuery);
+
+    const activeFilters = { ...filters };
+
+    if (activeFilters.source) {
+      activeFilters.source = NormalizeService.normalizeSource(activeFilters.source);
+    }
+
+    if (activeFilters.from && /^\d{4}-\d{2}-\d{2}$/.test(activeFilters.from)) {
+      activeFilters.from = `${activeFilters.from}T00:00:00.000Z`;
+    }
+
+    if (activeFilters.to && /^\d{4}-\d{2}-\d{2}$/.test(activeFilters.to)) {
+      activeFilters.to = `${activeFilters.to}T23:59:59.999Z`;
+    }
+
+    const [data, total] = await Promise.all([
+      MentionRepository.findMentions(limit, offset, activeFilters, sortBy, sortOrder),
+      MentionRepository.countMentions(activeFilters),
+    ]);
+
+    const pagination = PaginationUtils.calculatePaginationMeta(page, limit, total);
+
+    return { data, pagination };
   }
 }

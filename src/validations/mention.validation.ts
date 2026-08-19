@@ -11,7 +11,22 @@ export const mentionSchema = z.object({
   engagement: z.union([z.number(), z.string()]).nullable().optional(),
 });
 
-export type RawMentionInput = z.infer<typeof mentionSchema>;
-
 export const bulkIngestSchema = z.array(mentionSchema).min(1, 'At least one mention is required');
-export type BulkIngestDto = z.infer<typeof bulkIngestSchema>;
+
+export const searchQuerySchema = z.object({
+  q: z.string().optional(),
+  source: z.string().optional(),
+  from: z
+    .string()
+    .refine((val) => !isNaN(Date.parse(val)), { message: 'Invalid from date format' })
+    .optional(),
+  to: z
+    .string()
+    .refine((val) => !isNaN(Date.parse(val)), { message: 'Invalid to date format' })
+    .optional(),
+  page: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().max(100).optional(),
+  sort_by: z.enum(['published_at', 'engagement', 'source', 'created_at']).optional(),
+  sort_order: z.enum(['asc', 'desc']).optional(),
+});
+

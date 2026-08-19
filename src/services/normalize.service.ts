@@ -1,6 +1,6 @@
 import sanitizeHtml from 'sanitize-html';
-import { RawMentionInput } from '../validations/mention.validation';
 import { Mention } from '../types/mention';
+import { RawMentionDto } from '../dtos/mention.dto';
 
 const SOURCE_ALIASES: Record<string, string> = {
   thestar: 'The Star',
@@ -86,7 +86,7 @@ export class NormalizeService {
     return isNaN(parsed) ? null : parsed;
   }
 
-  static normalize(input: RawMentionInput): Omit<Mention, 'id' | 'created_at' | 'updated_at'> {
+  static normalize(input: RawMentionDto): Omit<Mention, 'id' | 'created_at' | 'updated_at'> {
     return {
       external_id: input.external_id ? input.external_id.trim() : null,
       source: this.normalizeSource(input.source),

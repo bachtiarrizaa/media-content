@@ -1,5 +1,6 @@
+import { Knex } from 'knex';
 import db from '../config/db.config';
-import type { Mention } from '../types/mention';
+import type { Mention, MentionFilters } from '../types/mention';
 
 const CHUNK_SIZE = 500;
 
@@ -33,7 +34,8 @@ export class MentionRepository {
           .returning(db.raw('(xmax = 0) as is_inserted'));
 
         const inserted = rows.filter(
-          (r: { is_inserted: boolean | string }) => r.is_inserted === true || r.is_inserted === 'true',
+          (r: { is_inserted: boolean | string }) =>
+            r.is_inserted === true || r.is_inserted === 'true',
         ).length;
 
         totalInserted += inserted;
@@ -42,5 +44,53 @@ export class MentionRepository {
     });
 
     return { inserted: totalInserted, updated: totalUpdated };
+  }
+
+  private static applyFilters(query: Knex.QueryBuilder, filters?: MentionFilters) {
+    if (filters?.q) {
+      query.whereRaw(
+        "to_tsvector('english', coalesce(title, '') || ' ' || coalesce(content, '')) @@ plainto_tsquery('english', ?)",
+        [filters.q],
+      );
+    }
+
+    if (filters?.source) {
+      query.whereILike('source', filters.source);
+    }
+
+    if (filters?.from) {
+      query.where('published_at', '>=', filters.from);
+    }
+
+    if (filters?.to) {
+      query.where('published_at', '<=', filters.to);
+    }
+
+    return query;
+  }
+
+  static async countMentions(filters?: MentionFilters): Promise<number> {
+    const query = db('mentions');
+    this.applyFilters(query, filters);
+    const result = await query.count('* as total').first();
+    return Number(result?.total) || 0;
+  }
+
+  static async findMentions(
+    limit: number,
+    offset: number,
+    filters?: MentionFilters,
+    sortBy: string = 'published_at',
+    sortOrder: 'asc' | 'desc' = 'desc',
+  ): Promise<Mention[]> {
+    const query = db('mentions');
+    this.applyFilters(query, filters);
+    return query
+      .orderBy([
+        { column: sortBy, order: sortOrder },
+        { column: 'id', order: 'asc' },
+      ])
+      .limit(limit)
+      .offset(offset);
   }
 }
