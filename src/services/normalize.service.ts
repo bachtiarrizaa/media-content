@@ -47,11 +47,11 @@ export class NormalizeService {
   static parsePublishedAt(dateInput?: string | number | null): Date | null {
     if (!dateInput) return null;
 
-    if (typeof dateInput === 'number') {
-      return new Date(dateInput * 1000);
-    }
+    const trimmed = dateInput.toString().trim();
 
-    const trimmed = dateInput.trim();
+    if (/^\d+$/.test(trimmed)) {
+      return new Date(parseInt(trimmed, 10) * 1000);
+    }
 
     const dmyRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
     const dmyMatch = trimmed.match(dmyRegex);
